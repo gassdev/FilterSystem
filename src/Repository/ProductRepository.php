@@ -5,7 +5,10 @@ namespace App\Repository;
 use App\Data\SearchData;
 use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
+use Knp\Component\Pager\Pagination\PaginationInterface;
+use Knp\Component\Pager\PaginatorInterface;
 
 /**
  * @extends ServiceEntityRepository<Product>
@@ -17,9 +20,15 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ProductRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    /**
+     * @var PaginatorInterface
+     */
+    private $paginator;
+
+    public function __construct(ManagerRegistry $registry, PaginatorInterface $paginator)
     {
         parent::__construct($registry, Product::class);
+        $this->paginator = $paginator;
     }
 
     public function save(Product $entity, bool $flush = false): void
@@ -43,9 +52,36 @@ class ProductRepository extends ServiceEntityRepository
     /**
      * Récupère les produits en lien avec une recherche
      * @param SearchData $search
-     * @return Product[]
+     * @return PaginationInterface
      */
-    public function findSearch(SearchData $search): array
+    public function findSearch(SearchData $search): PaginationInterface
+    {
+        $query = $this->getSearchQuery($search)->getQuery();
+        return $this->paginator->paginate(
+            $query,
+            $search->page, 
+            9
+        );
+    }
+
+        
+    /**
+     * Récupèle prix minimum et maximum correspondant à une recherche
+     *
+     * @param  SearchData $search
+     * @return integer[]
+     */
+    public function findMinMax(SearchData $search): array
+    {
+        $results = $this->getSearchQuery($search, ignorePrice: true)
+            ->select('MIN(p.price) as min, MAX(p.price) as max')
+            ->getQuery()
+            ->getScalarResult()
+        ;
+        return [(int)$results[0]['min'], (int)$results[0]['max']];
+    }
+
+    private function getSearchQuery(SearchData $search, $ignorePrice = false): QueryBuilder
     {
         $query = $this
             ->createQueryBuilder('p')
@@ -60,14 +96,14 @@ class ProductRepository extends ServiceEntityRepository
             ;
         }
 
-        if (!empty($search->min)) {
+        if (!empty($search->min)  && $ignorePrice === false) {
             $query = $query
                 ->andWhere('p.price >= :min')
                 ->setParameter('min', $search->min)
             ;
         }
 
-        if (!empty($search->max)) {
+        if (!empty($search->max)  && $ignorePrice === false) {
             $query = $query
                 ->andWhere('p.price <= :max')
                 ->setParameter('max', $search->max)
@@ -87,31 +123,7 @@ class ProductRepository extends ServiceEntityRepository
             ;
         }
 
-        return $query->getQuery()->getResult();
+        return $query;
     }
 
-//    /**
-//     * @return Product[] Returns an array of Product objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('p')
-//            ->andWhere('p.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('p.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?Product
-//    {
-//        return $this->createQueryBuilder('p')
-//            ->andWhere('p.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
 }

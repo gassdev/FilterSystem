@@ -6,6 +6,13 @@ use App\Entity\Category;
 
 class SearchData
 {
+    
+    /**
+     * page
+     *
+     * @var int
+     */
+    public $page = 1;
         
     /**
      * q
