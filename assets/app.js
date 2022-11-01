@@ -6,7 +6,9 @@ import './bootstrap';
 
 import noUiSlider from 'nouislider';
 import 'nouislider/dist/nouislider.css';
+import Filter from './modules/Filter.js'
 
+new Filter(document.querySelector('.js-filter'))
 
 
 const slider = document.getElementById('price-slider');
@@ -42,6 +44,9 @@ if (slider) {
         if (handle == 1) {
             max.value = Math.round(values[1])
         }
+    })
+    range.on('end', function (values, handle) {
+        min.dispatchEvent(new Event('change'))
     })
 }
 
