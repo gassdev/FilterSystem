@@ -1,3 +1,4 @@
+import { Flipper } from 'flip-toolkit'
 export default class Filter{
 
     /**
@@ -67,13 +68,45 @@ export default class Filter{
         })
         if (response.status >= 200 && response.status < 300) {
             const data = await response.json()
-            this.#content.innerHTML = data.content
+            this.#flipContent(data.content)
             this.#sorting.innerHTML = data.sorting
             this.#pagination.innerHTML = data.pagination
             history.replaceState({}, '', url)
         }else{
             console.error(response)
         }
+    }
+
+    
+    /**
+     * Remplace les éléments de la grille avec un effet d'animation flip
+     * @param  {string} content
+     */
+    #flipContent (content) {
+        const flipper = new Flipper({
+            element: this.#content
+        })
+        Array.from(this.#content.children).forEach((element) => {
+            flipper.addFlipped({
+                element,
+                flipId: element.id,
+                shouldFlip: false,
+                onExit: (element, index, remove) => {
+                    window.setTimeout(() => {
+                        remove()
+                    },2000)
+                }
+            })
+        })
+        flipper.recordBeforeUpdate()
+        this.#content.innerHTML = content
+        Array.from(this.#content.children).forEach((element) => {
+            flipper.addFlipped({
+                element,
+                flipId: element.id
+            })
+        })
+        flipper.update()
     }
 
 }
