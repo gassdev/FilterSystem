@@ -24,7 +24,7 @@ class ProductController extends AbstractController
         $products = $repository->findSearch($data);
 
         if ($request->get('ajax')) {
-          return new JsonResponse([
+            return new JsonResponse([
                 'content' => $this->renderView('product/_products.html.twig', [
                     'products' => $products,
                 ]),
@@ -35,8 +35,11 @@ class ProductController extends AbstractController
                 'pagination' => $this->renderView('product/_pagination.html.twig',
                     [
                         'products' => $products
-                ])
-          ]);
+                ]),
+                'pages' => ceil($products->getTotalItemCount() / $products->getItemNumberPerPage()),
+                'min' => $min,
+                'max' => $max,
+            ]);
         }
 
         return $this->render('product/index.html.twig', [
